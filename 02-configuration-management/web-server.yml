@@ -1,0 +1,20 @@
+---
+- hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+
+    - name: Update the apt-get cache & Install Apache
+      apt:
+        name: apache2
+        update_cache: yes
+
+    - name: Install PHP
+      apt:
+        name: libapache2-mod-php
+
+    - name: Copy code repository
+      git: repo=https://github.com/doxic/php-app dest=/var/www/html/app
+
+    - name: Start Apache
+      service: name=apache2 state=started enabled=yes

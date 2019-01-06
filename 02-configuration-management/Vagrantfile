@@ -1,0 +1,45 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "ubuntu/xenial64"
+
+  config.vm.provider :virtualbox do |v|
+    v.memory = 512
+    v.cpus = 1
+    v.linked_clone = true
+  end
+
+  # Disable the new default behavior introduced in Vagrant 1.7, to
+  # ensure that all Vagrant machines will use the same SSH key pair.
+  # See https://github.com/hashicorp/vagrant/issues/5005
+  config.ssh.insert_key = false
+
+  # Define three VMs with static private IP addresses.
+  boxes = [
+    { :name => "web1", :ip => "192.168.50.20" },
+    { :name => "web2", :ip => "192.168.50.21" },
+    { :name => "web3", :ip => "192.168.50.22" }
+  ]
+
+  # Provision each of the VMs.
+  boxes.each_with_index do |opts, index|
+    config.vm.define opts[:name] do |config|
+      config.vm.hostname = opts[:name]
+      config.vm.network :private_network, ip: opts[:ip]
+
+      # Provision all the VMs in parallel using Ansible after last VM is up.
+      if index == boxes.size-1
+        config.vm.provision "ansible" do |ansible|
+          ansible.compatibility_mode = "2.0"
+          ansible.playbook = "provision.yml"
+          ansible.limit = "all"
+          ansible.become = true
+        end
+      end
+    end
+  end
+
+end
